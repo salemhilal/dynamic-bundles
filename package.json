@@ -1,0 +1,22 @@
+{
+    "name": "dynamic-bundles",
+    "version": "1.0.0",
+    "main": "index.js",
+    "license": "MIT",
+    "dependencies": {
+        "eslint": "^6.8.0",
+        "jscodeshift": "^0.9.0",
+        "recast": "^0.19.1",
+        "webpack": "next",
+        "webpack-sources": "^1.4.3"
+    },
+    "scripts": {
+        "inspect": "node --inspect-brk ./node_modules/.bin/webpack --reporter basic",
+        "build": "webpack",
+        "synergize": "node synergizer/synergizer.js dist/src/index.js dist/src/index2.js"
+    },
+    "devDependencies": {
+        "prettier": "^2.0.5",
+        "webpack-cli": "^3.3.11"
+    }
+}
