@@ -4,9 +4,11 @@
     "main": "index.js",
     "license": "MIT",
     "dependencies": {
-        "eslint": "^6.8.0",
+        "eslint": "^7.0.0",
+        "http-server": "^0.12.3",
         "jscodeshift": "^0.9.0",
         "recast": "^0.19.1",
+        "typescript": "^3.8.3",
         "webpack": "next",
         "webpack-sources": "^1.4.3",
         "yargs": "^15.3.1"
@@ -14,9 +16,13 @@
     "scripts": {
         "inspect": "node --inspect-brk ./node_modules/.bin/webpack --reporter basic",
         "build": "webpack",
-        "synergize": "node synergizer/synergizer.js dist/src/index.js dist/src/index2.js"
+        "synergize": "node synergizer/synergizer.js -v -o dist/output.js dist/src/index.js dist/src/index2.js",
+        "serve": "cp -a static/. dist/ && http-server dist"
     },
     "devDependencies": {
+        "@typescript-eslint/eslint-plugin": "^2.31.0",
+        "@typescript-eslint/parser": "^2.31.0",
+        "eslint-config-prettier": "^6.11.0",
         "prettier": "^2.0.5",
         "webpack-cli": "^3.3.11"
     }
