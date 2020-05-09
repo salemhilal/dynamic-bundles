@@ -3,8 +3,10 @@
  * dedupes modules across a few webpack files and concats them together.
  */
 const fs = require("fs");
+const path = require("path");
 const { promisify } = require("util");
 const readFile = promisify(fs.readFile);
+const writeFile = promisify(fs.writeFile);
 const j = require("jscodeshift");
 const { argv } = require("yargs");
 
@@ -91,6 +93,7 @@ Promise.all(targetFiles.map((file) => readFile(file)))
                 console.log("====================\n\n", source);
                 return source;
             })
-            .join();
+            .join("");
+        return writeFile(path.resolve("./dist/output.js"), output);
     })
     .catch((e) => console.error(e));
