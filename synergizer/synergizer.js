@@ -6,15 +6,18 @@ const fs = require("fs");
 const { promisify } = require("util");
 const readFile = promisify(fs.readFile);
 const j = require("jscodeshift");
+const { argv } = require("yargs");
 
 // TODO: use yargs
 // TODO: take more than one file as an argument lol
-const targetFile = process.argv[2];
-if (!targetFile) {
-    console.log(`Invalid target file. Expected syntax: node ${process.argv[1]} <targetFile>`);
+const targetFiles = argv._;
+if (targetFiles.length < 1) {
+    console.log(`Invalid target file. Expected syntax: node ${argv.$0} <targetFile ...>`);
     process.exit(1);
 }
-
+// const targetFile = targetFiles[0];
+console.log("targets:", targetFiles.join(", "));
+const targetFile = targetFiles[0];
 const moduleMap = {};
 const setModule = (name) => {
     moduleMap[name] = true;
@@ -54,27 +57,40 @@ const astToModuleMapPath = (ast) => {
 };
 
 console.log(`Synergizing ${targetFile}`);
-readFile(targetFile)
-    .then((buffer) => {
-        // const ast = parse(buffer.toString());
-        // console.log("result", ast);
-        // const output = print(ast);
-        // console.log("code", output.code);
-        const ast = j(buffer.toString());
-        const modulePath = astToModuleMapPath(ast);
-        const moduleProps = modulePath.get("properties");
-        // Get a new list of props
-        const filteredPropPaths = moduleProps.filter((path) => {
-            if (path.get("key").value.value === "./src/a.js") {
-                return false;
-            }
-            return true;
-        });
-        // Convert paths to nodes. There's probably a cuter way to do this but w/e
-        const filteredProps = filteredPropPaths.map((path) => path.value);
-        // Make a new module map, and replace the old one
-        modulePath.replace(j.objectExpression(filteredProps));
-        // TODO: Uh do somethin with this
-        console.log(ast.toSource());
+Promise.all(targetFiles.map((file) => readFile(file)))
+    .then((buffers) => {
+        const output = buffers
+            .map((buffer) => buffer.toString())
+            .map((source) => j(source))
+            .map((ast) => {
+                const modulePath = astToModuleMapPath(ast);
+                const moduleProps = modulePath.get("properties");
+                return { ast, modulePath, moduleProps };
+            })
+            .reduce(
+                ({ seen, filtered }, { ast, modulePath, moduleProps }) => {
+                    const filteredPropPaths = moduleProps.filter((path) => {
+                        const propName = path.get("key").value.value;
+                        if (seen.has(propName)) {
+                            console.log(`Already seen module ${propName}`);
+                            return false;
+                        }
+                        console.log(`Adding ${propName}`);
+                        seen.add(propName);
+                        return true;
+                    });
+                    filtered.push({ filteredPropPaths, modulePath, ast });
+                    return { seen, filtered };
+                },
+                { seen: new Set(), filtered: [] }
+            )
+            .filtered.map(({ ast, filteredPropPaths, modulePath }) => {
+                const filteredProps = filteredPropPaths.map((path) => path.value);
+                modulePath.replace(j.objectExpression(filteredProps));
+                const source = ast.toSource();
+                console.log("====================\n\n", source);
+                return source;
+            })
+            .join();
     })
     .catch((e) => console.error(e));
